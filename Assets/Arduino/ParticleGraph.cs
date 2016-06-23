@@ -28,7 +28,7 @@ public class ParticleGraph : MonoBehaviour
 		m_receiver.OnByteReceived -= UpdateParticles;
 	}
 
-	void UpdateParticles (float[] positions)
+	void UpdateParticles (Vector2[] positions, int maxYPosition)
 	{
 		int totalPositions = positions.Length;
 
@@ -37,7 +37,11 @@ public class ParticleGraph : MonoBehaviour
 
 		for (int i = 0; i < totalPositions; i++) {
 			ParticleSystem.EmitParams emitOveride = new ParticleSystem.EmitParams ();
-			emitOveride.position = new Vector3 (transform.position.x + (i * x_increment), transform.position.y + (positions [i] * m_yMultiplier), transform.position.z);
+			emitOveride.position = new Vector3 (transform.position.x + (i * x_increment), transform.position.y + (positions [i].y * m_yMultiplier), transform.position.z);
+			if (i == maxYPosition)
+				emitOveride.startColor = Color.white;
+			else
+				emitOveride.startColor = Color.grey;
 			//emitOveride.applyShapeToPosition = false;
 			m_particleSystem.Emit (emitOveride, 1); //Emit one particle at the position
 		}

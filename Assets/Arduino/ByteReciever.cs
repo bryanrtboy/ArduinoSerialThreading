@@ -26,11 +26,12 @@ using System.Threading;
 public class ByteReciever : MonoBehaviour
 {
 
-	public event Action<float[]> OnByteReceived;
+	public event Action<Vector2[],int> OnByteReceived;
 
 	public SerialReader m_serialReader;
 
 	int xValue, yValue, Command;
+	Vector2 xyValue;
 	bool Error = true;
 	int ErrorCounter = 0;
 	int TotalRecieved = 0;
@@ -47,8 +48,9 @@ public class ByteReciever : MonoBehaviour
 	List<float> XPacket = new List<float> (0);
 	List<float> YPacket = new List<float> (0);
 	List<float> incomingYValues = new List<float> (0);
-
-	float[] yPositions;
+	List<Vector2> incomingXYValues = new List<Vector2> (0);
+	Vector2[] xyPositions;
+	int maxYPosition = 0;
 
 
 	void Awake ()
@@ -66,8 +68,8 @@ public class ByteReciever : MonoBehaviour
 	{
 		if (DataRecieved) {
 			DataRecieved = false;
-			if (OnByteReceived != null && yPositions != null)
-				OnByteReceived (yPositions);
+			if (OnByteReceived != null && xyPositions != null)
+				OnByteReceived (xyPositions, maxYPosition);
 		}
 	}
 
@@ -120,22 +122,18 @@ public class ByteReciever : MonoBehaviour
 			}
 
 			if (!Error) {
-
-
+				
 				int zeroByte = serialInArray [6]; //Which values have a zero value
 				// println (zeroByte & 2);
-
 				xLSB = serialInArray [3]; //X value's least significant byte
 				if ((zeroByte & 1) == 1)
 					xLSB = 0;
 				xMSB = serialInArray [2]; //X value's most significant byte     
 				if ((zeroByte & 2) == 2)
 					xMSB = 0;
-
 				yLSB = serialInArray [5]; //Y value's least significant byte
 				if ((zeroByte & 4) == 4)
 					yLSB = 0;
-
 				yMSB = serialInArray [4]; //Y value's most significant byte
 				if ((zeroByte & 8) == 8)
 					yMSB = 0;
@@ -148,6 +146,7 @@ public class ByteReciever : MonoBehaviour
 				xValue = xMSB << 8 | xLSB;                    // Get xValue from yMSB & yLSB  
 				yValue = yMSB << 8 | yLSB;                    // Get yValue from xMSB & xLSB
 
+				xyValue = new Vector2 (xValue, yValue);
 				//                 How that works: if xMSB = 10001001   and xLSB = 0100 0011 
 				//			       xMSB << 8 = 10001001 00000000    (shift xMSB left by 8 bits)                       
 				//			       xLSB =          01000011    
@@ -160,67 +159,42 @@ public class ByteReciever : MonoBehaviour
 
 				UpdateDictionaries ();
 			}
-
-
-		} //end buffer read
+		}
 
 	}
 
-	void UpdateDictionaries ()
+	void UpdateDictionaries () //Still inside the thread
 	{
 		switch (Command) {
 		//Recieve array1 and array2 from chip, update oscilloscope
 		case 1: // Data is added to dynamic arrays
-			incomingXValues.Add (xValue);
-			incomingYValues.Add (yValue);
-//			yPositions = incomingYValues.ToArray ();   //This can make it feel more responsive by updated as data comes in...
-//			DataRecieved = true;
+			incomingXYValues.Add (xyValue);
+//			Debug.Log ("X is " + xyValue.x);
 			break;
 		case 2: // An array of unknown size is about to be recieved, empty storage arrays
-			incomingXValues = new List<float> (0);
-			incomingYValues = new List<float> (0);
+			//incomingXYValues = new List<Vector2> (0);
+			incomingXYValues.Clear ();
 			break;    
 		case 3:  // Array has finished being recieved, update arrays being drawn 
-			XPacket = incomingXValues;
-			YPacket = incomingYValues;
-			//			print ("V3: " + Voltage3.Count + ", T3: " + Time3.Count + " @" + Time.time);
-			yPositions = incomingYValues.ToArray ();   //Send data when Command says
+			xyPositions = incomingXYValues.ToArray ();   //Send data when Command says
+			float maxY = 0;
+			for (int i = 0; i < xyPositions.Length; i++) {
+				if (xyPositions [i].y > maxY)
+					maxYPosition = i;
+			}
+				
 			DataRecieved = true;
-			incomingXValues.Clear ();
-			incomingYValues.Clear ();
+			incomingXYValues.Clear ();
 			break;  
-
-		//Recieve array2 and array3 from chip
-
-		//		case 4: // Data is added to dynamic arrays
-		//			DynamicArrayTime2.Add (xValue);
-		//			DynamicArray2.Add ((yValue - 16000.0f) / 32000.0f * 20.0f);
-		//			print ("V2: " + Voltage2.Count + ", Dyn T2" + Time2.Count + " @" + Time.time);
-		//			break;
-		//
-		//		case 5: // An array of unknown size is about to be recieved, empty storage arrays
-		//			DynamicArrayTime2.Clear ();
-		//			DynamicArray2.Clear ();
-		//			break;    
-		//
-		//		case 6:  // Array has finnished being recieved, update arrays being drawn 
-		//			Time2 = DynamicArrayTime2;
-		//			current = DynamicArray2;
-		//			print ("current: " + current.Count + ", T2" + Time2.Count + " @" + Time.time);
-		//			DataRecieved2 = true;
-		//			break;  
-		//		//         Recieve a value of calculated power consumption & add it to the 
-		//		//         PowerArray.
-		//		case 20:  
-		//			PowerArray.Add (yValue);
-		//			break; 
-		//		case 21:  
-		//			DynamicArrayTime.Add (xValue); 
-		//			DynamicArrayPower.Add (yValue);
-		//			break;
 		default:
 			break;
 		}
 	}
 
+}
+
+public class DataPacket
+{
+	Vector2[] xy;
+	float maxY;
 }

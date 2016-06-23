@@ -22,6 +22,7 @@ public class DotGraph : MonoBehaviour
 		for (int i = 0; i < m_nodeCount; i++) {
 			m_nodes [i] = Instantiate (m_node, transform.position, Quaternion.identity) as Transform;
 			m_nodes [i].position = new Vector3 (transform.position.x + (i * xIncrement), transform.position.y, transform.position.z);
+			m_nodes [i].name = "Node " + i.ToString ();
 		}
 	}
 
@@ -35,7 +36,7 @@ public class DotGraph : MonoBehaviour
 		m_receiver.OnByteReceived -= UpdatePositions;
 	}
 
-	public void UpdatePositions (float[] positions)
+	public void UpdatePositions (Vector2[] positions, int maxYposition)
 	{
 		int count = positions.Length;
 
@@ -44,7 +45,11 @@ public class DotGraph : MonoBehaviour
 				Debug.Log ("Stopping, not enough nodes for the positions...");
 				return;
 			}
-			m_nodes [i].transform.position = new Vector3 (m_nodes [i].transform.position.x, transform.position.y + (positions [i] * m_yMultiplier), transform.position.z);
+			m_nodes [i].transform.position = new Vector3 (m_nodes [i].transform.position.x, transform.position.y + (positions [i].y * m_yMultiplier), transform.position.z);
+			if (i == maxYposition)
+				m_nodes [i].localScale = new Vector3 (2, 2, 2);
+			else
+				m_nodes [i].localScale = new Vector3 (1, 1, 1);
 		}
 	}
 
