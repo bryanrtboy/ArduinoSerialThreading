@@ -1,20 +1,30 @@
-﻿using UnityEngine;
+﻿//Bryan Leister - June 2016
+//
+//This script reads from the serial port on it's own thread and passes to the byteReciever (still in the same thread)
+//NOTE:  You cannot run Unity operations off the main thread, and so you must be careful to pass data in such a way
+//that is thread safe. I am approaching this by setting booleans in both the Reader and Reciever script, when true
+//do the Unity stuff and making sure to not try to do 'Unity stuff' with data that is owned by the other thread.
+//
+
+using UnityEngine;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.IO.Ports;
 
 public class SerialReader : MonoBehaviour
 {
-
 	public string m_name = "COM3";
 	public int m_baudRate = 115200;
-	public float m_updateRate = .1f;
+	public ByteReciever m_receiver;
+	public float m_updateRate = .01f;
+	public int m_bufferSize = 512;
 
-	Thread thread;
+	Thread m_thread;
 	bool runThread = true;
 	bool updateThread;
-		
+
 	SerialPort sp;
 
 	void Start ()
@@ -24,16 +34,9 @@ public class SerialReader : MonoBehaviour
 
 		sp = new SerialPort (m_name, m_baudRate);
 		sp.Open ();
-
-		thread = new Thread (ThreadUpdate); 
-		thread.Start (sp);
-
+		m_thread = new Thread (ThreadUpdate);
+		m_thread.Start (sp);
 		InvokeRepeating ("UpdateInterval", .5f, m_updateRate);
-	}
-
-	void OnEnable ()
-	{
-		//StartThread ();
 
 	}
 
@@ -54,29 +57,36 @@ public class SerialReader : MonoBehaviour
 		SerialPort serialPort = context as SerialPort;
 
 		while (runThread && serialPort.IsOpen) {
-			if (updateThread) {
+			if (updateThread) {						    //Only run the thread this often based on when it is set to true
 				updateThread = false;
-				//some crazy ass function that takes forever to do here
-				string inData = serialPort.ReadLine ();
-				print (inData);
-				Thread.Sleep (10);
+								    
+				byte[] buffer = new byte[m_bufferSize];   //make a buffer to hold a chunk of the stream
+				sp.Read (buffer, 0, m_bufferSize);		//Get the data
+
+				if (buffer [0] != null) {
+					if (m_receiver == null) {
+						Debug.LogError ("No receiver!");
+						return;
+					}
+					m_receiver.HandleBytes (buffer);	//Still running on this thread
+				}
+				//Thread.Sleep (1);
 			}
 		}  
 	}
+
 
 	void OnApplicationQuit ()
 	{
 		EndThreads ();  
 	}
 
-	//This must be called from OnApplicationQuit AND before the loading of a new level.
-	//Threads spawned from this class must be ended when this class is destroyed in level changes.
 	void EndThreads ()
 	{
 		runThread = false;
 		//you could use thread.abort() but that has issues on iOS
 
-		while (thread.IsAlive) {
+		while (m_thread.IsAlive) {
 			//simply have main loop wait till thread ends
 		}
 	}
