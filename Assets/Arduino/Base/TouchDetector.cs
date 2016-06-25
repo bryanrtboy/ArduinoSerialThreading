@@ -63,15 +63,15 @@ namespace ArduinoSerialReader
 		void GestureCompare (Vector2[] positions, int maxYposition)
 		{
 			m_lastMaxYposition = positions [maxYposition];
-	
+
 			float totalDist = 0;
 			int currentMax = 0;
 			float currentMaxValue = -1;
-	
+
 			for (int i = 0; i < m_touchTypeCount; i++) {
 				//Store the maxY so that if a button is pressed, we will enter this value for that button.
 				m_lastMaxYposition = positions [maxYposition];
-	
+
 				//Calculate the distance for this button, and put it in an array of distances for all of the buttons
 				m_gestureDistances [i] = Vector2.Distance (m_lastMaxYposition, m_storedGesturePoints [i]);
 				totalDist += m_gestureDistances [i];
@@ -80,10 +80,10 @@ namespace ArduinoSerialReader
 					currentMaxValue = m_gestureDistances [i];
 				}
 			}
-	
+
 			totalDist = totalDist / 3;
-	
-	
+
+
 			for (int i = 0; i < m_touchTypeCount; i++) {
 				float currentAmmount = 0;
 				currentAmmount = 1 - m_gestureDistances [i] / totalDist; //How much of the button is filled (strength of signal)
@@ -100,29 +100,39 @@ namespace ArduinoSerialReader
 
 				switch (i) {
 				case 0:
-					m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
-					if (OnNone != null)
-						OnNone (m_touchType);
+					if (m_touchType.isActive) {
+						m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
+						if (OnNone != null)
+							OnNone (m_touchType);
+					}
 					break;
 				case 1:
-					m_touchType.typeOfTouch = ToucheTouchType.Kind.Touch;
-					if (OnTouch != null)
-						OnTouch (m_touchType);
+					if (m_touchType.isActive) {
+						m_touchType.typeOfTouch = ToucheTouchType.Kind.Touch;
+						if (OnTouch != null)
+							OnTouch (m_touchType);
+					}
 					break;
 				case 2:
-					m_touchType.typeOfTouch = ToucheTouchType.Kind.Grab;
-					if (OnGrab != null)
-						OnGrab (m_touchType);
+					if (m_touchType.isActive) {
+						m_touchType.typeOfTouch = ToucheTouchType.Kind.Grab;
+						if (OnGrab != null)
+							OnGrab (m_touchType);
+					}
 					break;
 				case 3:
-					m_touchType.typeOfTouch = ToucheTouchType.Kind.InWater;
-					if (OnInWater != null)
-						OnInWater (m_touchType);
+					if (m_touchType.isActive) {
+						m_touchType.typeOfTouch = ToucheTouchType.Kind.InWater;
+						if (OnInWater != null)
+							OnInWater (m_touchType);
+					}
 					break;
 				default :
-					m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
-					if (OnNone != null)
-						OnNone (m_touchType);
+					if (m_touchType.isActive) {
+						m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
+						if (OnNone != null)
+							OnNone (m_touchType);
+					}
 					break;
 				}
 			}

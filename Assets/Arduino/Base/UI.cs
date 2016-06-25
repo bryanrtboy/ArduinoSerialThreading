@@ -19,61 +19,33 @@ namespace ArduinoSerialReader
 
 		void OnEnable ()
 		{
-			m_touchReceiver.OnNone += HandleNone; 
-			m_touchReceiver.OnTouch += HandleTouch;
-			m_touchReceiver.OnGrab += HandleGrab;
-			m_touchReceiver.OnInWater += HandleInWater;
+			m_touchReceiver.OnNone += HandleTouches; 
+			m_touchReceiver.OnTouch += HandleTouches;
+			m_touchReceiver.OnGrab += HandleTouches;
+			m_touchReceiver.OnInWater += HandleTouches;
 
 		}
 
 		void OnDisable ()
 		{
-			m_touchReceiver.OnNone -= HandleNone; 
-			m_touchReceiver.OnTouch -= HandleTouch;
-			m_touchReceiver.OnGrab -= HandleGrab;
-			m_touchReceiver.OnInWater -= HandleInWater;
+			m_touchReceiver.OnNone -= HandleTouches; 
+			m_touchReceiver.OnTouch -= HandleTouches;
+			m_touchReceiver.OnGrab -= HandleTouches;
+			m_touchReceiver.OnInWater -= HandleTouches;
 
 		}
 
-		void HandleNone (ToucheTouchType touch)
+		void HandleTouches (ToucheTouchType touch)
 		{
-			if (touch.isActive)
-				m_buttonImages [0].color = Color.red;
-			else
-				m_buttonImages [0].color = Color.white;
-		
-			m_buttonImages [0].fillAmount = touch.amount;
-		}
-
-		void HandleTouch (ToucheTouchType touch)
-		{
-
-			if (touch.isActive)
-				m_buttonImages [1].color = Color.red;
-			else
-				m_buttonImages [1].color = Color.white;
-
-			m_buttonImages [1].fillAmount = touch.amount;
-		}
-
-		void HandleGrab (ToucheTouchType touch)
-		{
-			if (touch.isActive)
-				m_buttonImages [2].color = Color.red;
-			else
-				m_buttonImages [2].color = Color.white;
-
-			m_buttonImages [2].fillAmount = touch.amount;
-		}
-
-		void HandleInWater (ToucheTouchType touch)
-		{
-			if (touch.isActive)
-				m_buttonImages [3].color = Color.red;
-			else
-				m_buttonImages [3].color = Color.white;
-
-			m_buttonImages [3].fillAmount = touch.amount;
+			for (int i = 0; i < m_buttonImages.Length; i++) {
+				if (i == (int)touch.typeOfTouch) {
+					m_buttonImages [i].color = Color.red;
+					m_buttonImages [i].fillAmount = touch.amount;
+				} else {
+					m_buttonImages [i].color = Color.white;
+					m_buttonImages [i].fillAmount = 1f;
+				}
+			}
 		}
 	}
 }
