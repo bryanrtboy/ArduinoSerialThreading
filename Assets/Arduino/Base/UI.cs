@@ -13,39 +13,54 @@ namespace ArduinoSerialReader
 {
 	public class UI : MonoBehaviour
 	{
-		public TouchDetector m_touchReceiver;
+
 		public Image[] m_buttonImages = new Image[4];
 		//With 4 types of touches, we need to have 4 images and they should be sorted in order that matches the ToucheTouchType
 
+		void Awake ()
+		{
+			if (TouchDetector.instance == null) {
+				Debug.LogError ("No Touch Detector in Scene!");
+				Destroy (this);
+				return;
+			}
+		}
+
 		void OnEnable ()
 		{
-			m_touchReceiver.OnNone += HandleTouches; 
-			m_touchReceiver.OnTouch += HandleTouches;
-			m_touchReceiver.OnGrab += HandleTouches;
-			m_touchReceiver.OnInWater += HandleTouches;
-
+			TouchDetector.instance.OnTouch += HandleTouches;
+			TouchDetector.instance.OnNewTouchDetected += HandleNewTouchDetected;
 		}
 
 		void OnDisable ()
 		{
-			m_touchReceiver.OnNone -= HandleTouches; 
-			m_touchReceiver.OnTouch -= HandleTouches;
-			m_touchReceiver.OnGrab -= HandleTouches;
-			m_touchReceiver.OnInWater -= HandleTouches;
-
+			TouchDetector.instance.OnTouch -= HandleTouches;
+			TouchDetector.instance.OnNewTouchDetected -= HandleNewTouchDetected;
 		}
 
-		void HandleTouches (ToucheTouchType touch)
+		void HandleTouches (ToucheTouch[] touches)
 		{
-			for (int i = 0; i < m_buttonImages.Length; i++) {
-				if (i == (int)touch.typeOfTouch) {
-					m_buttonImages [i].color = Color.red;
-					m_buttonImages [i].fillAmount = touch.amount;
-				} else {
+
+			int currentTouch = (int)TouchDetector.instance.m_currentTouchType;
+
+			for (int i = 0; i < touches.Length; i++) {
+				
+
+				if (i != currentTouch) {
 					m_buttonImages [i].color = Color.white;
-					m_buttonImages [i].fillAmount = 1f;
+					float amt = 1 - touches [i].amount;
+					m_buttonImages [i].fillAmount = amt;
+				} else {
+					m_buttonImages [i].fillAmount = touches [i].amount;
 				}
+					
 			}
 		}
+
+		void HandleNewTouchDetected (ToucheTouch.Type type)
+		{
+			m_buttonImages [(int)type].color = Color.red;
+		}
+			
 	}
 }

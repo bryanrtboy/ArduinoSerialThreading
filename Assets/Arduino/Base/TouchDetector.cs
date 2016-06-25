@@ -6,11 +6,10 @@ namespace ArduinoSerialReader
 {
 	public class TouchDetector : MonoBehaviour
 	{
+		public static TouchDetector instance;
 
-		public event Action<ToucheTouchType> OnNone;
-		public event Action<ToucheTouchType> OnTouch;
-		public event Action<ToucheTouchType> OnGrab;
-		public event Action<ToucheTouchType> OnInWater;
+		public event Action<ToucheTouch.Type> OnNewTouchDetected;
+		public event Action<ToucheTouch[]> OnTouch;
 
 		public ByteReciever m_receiver;
 		//These should be attached to Buttons Objects that are named - None, Touch, Grab, InWater. Buttons should send their position when pressed to SetButtonMaxPosition
@@ -18,12 +17,23 @@ namespace ArduinoSerialReader
 		Vector2[] m_storedGesturePoints = new Vector2[4];
 		float[] m_gestureDistances = new float [4];
 		Vector2 m_lastMaxYposition = Vector2.zero;
-		ToucheTouchType m_touchType;
+		ToucheTouch m_touchType;
 		int m_touchTypeCount;
+		[HideInInspector]
+		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.Nada;
 
 		void Awake ()
 		{
-			m_touchTypeCount = System.Enum.GetValues (typeof(ToucheTouchType.Kind)).Length;
+			//Check if instance already exists
+			if (instance == null)
+				//if not, set instance to this
+				instance = this;
+			//If instance already exists and it's not this:
+			else if (instance != this)
+				//Then destroy this. This enforces our singleton pattern, meaning there can only ever be one instance of a TouchDetector.
+				Destroy (gameObject); 
+
+			m_touchTypeCount = System.Enum.GetValues (typeof(ToucheTouch.Type)).Length;
 			m_storedGesturePoints = new Vector2[m_touchTypeCount];
 			m_gestureDistances = new float [m_touchTypeCount];
 		}
@@ -42,7 +52,7 @@ namespace ArduinoSerialReader
 		public void GetMaxPositions ()
 		{
 			for (int i = 0; i < m_touchTypeCount; i++) {
-				ToucheTouchType.Kind k = (ToucheTouchType.Kind)i;
+				ToucheTouch.Type k = (ToucheTouch.Type)i;
 				if (PlayerPrefs.HasKey (k.ToString () + "x") && PlayerPrefs.HasKey (k.ToString () + "y")) {
 					float x = PlayerPrefs.GetFloat (k.ToString () + "x");	
 					float y = PlayerPrefs.GetFloat (k.ToString () + "y");
@@ -54,7 +64,7 @@ namespace ArduinoSerialReader
 		public void SetMaxPosition (int buttonIndex)
 		{
 
-			ToucheTouchType.Kind k = (ToucheTouchType.Kind)buttonIndex;
+			ToucheTouch.Type k = (ToucheTouch.Type)buttonIndex;
 			m_storedGesturePoints [buttonIndex] = m_lastMaxYposition;
 			PlayerPrefs.SetFloat (k.ToString () + "x", m_lastMaxYposition.x);
 			PlayerPrefs.SetFloat (k.ToString () + "y", m_lastMaxYposition.y);
@@ -67,6 +77,7 @@ namespace ArduinoSerialReader
 			float totalDist = 0;
 			int currentMax = 0;
 			float currentMaxValue = -1;
+			float currentAmmount = 0;
 
 			for (int i = 0; i < m_touchTypeCount; i++) {
 				//Store the maxY so that if a button is pressed, we will enter this value for that button.
@@ -77,72 +88,44 @@ namespace ArduinoSerialReader
 				totalDist += m_gestureDistances [i];
 				if (m_gestureDistances [i] < currentMaxValue || i == 0) {
 					currentMax = i;
+
 					currentMaxValue = m_gestureDistances [i];
 				}
 			}
 
 			totalDist = totalDist / 3;
 
-
+			ToucheTouch[] touches = new ToucheTouch[m_touchTypeCount];
 			for (int i = 0; i < m_touchTypeCount; i++) {
-				float currentAmmount = 0;
+				currentAmmount = 0;
 				currentAmmount = 1 - m_gestureDistances [i] / totalDist; //How much of the button is filled (strength of signal)
 
-				m_touchType = new ToucheTouchType ();
+				m_touchType = new ToucheTouch ();
+				m_touchType.type = (ToucheTouch.Type)i;
+				m_touchType.amount = currentAmmount;
 
+				touches [i] = m_touchType;
 				if (currentMax == i) {
-					m_touchType.isActive = true; // if it is the current one, it must be active
-					m_touchType.amount = currentAmmount;
-				} else {
-					m_touchType.isActive = false; // if it is the current one, it must be active
-					m_touchType.amount = 1; //If this is not the current matching touch, just fill the button entirely
-				}
-
-				switch (i) {
-				case 0:
-					if (m_touchType.isActive) {
-						m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
-						if (OnNone != null)
-							OnNone (m_touchType);
-					}
-					break;
-				case 1:
-					if (m_touchType.isActive) {
-						m_touchType.typeOfTouch = ToucheTouchType.Kind.Touch;
-						if (OnTouch != null)
-							OnTouch (m_touchType);
-					}
-					break;
-				case 2:
-					if (m_touchType.isActive) {
-						m_touchType.typeOfTouch = ToucheTouchType.Kind.Grab;
-						if (OnGrab != null)
-							OnGrab (m_touchType);
-					}
-					break;
-				case 3:
-					if (m_touchType.isActive) {
-						m_touchType.typeOfTouch = ToucheTouchType.Kind.InWater;
-						if (OnInWater != null)
-							OnInWater (m_touchType);
-					}
-					break;
-				default :
-					if (m_touchType.isActive) {
-						m_touchType.typeOfTouch = ToucheTouchType.Kind.Nada;
-						if (OnNone != null)
-							OnNone (m_touchType);
-					}
-					break;
+					ChangeTouchType (m_touchType);
 				}
 			}
+
+			if (OnTouch != null)
+				OnTouch (touches);  //Send a batch of touches so that we can visualize how strong the matching touch is compared to neighbors
+		}
+
+		public void  ChangeTouchType (ToucheTouch touch)
+		{
+			m_currentTouchType = touch.type;
+			if (OnNewTouchDetected != null)
+				OnNewTouchDetected (m_currentTouchType);
 		}
 
 	}
 
-	public class ToucheTouchType
+	public class ToucheTouch
 	{
-		public enum Kind
+		public enum Type
 		{
 			//Using 'None' as a name has issues...
 			Nada = 0,
@@ -151,9 +134,8 @@ namespace ArduinoSerialReader
 			InWater = 3
 		}
 
-		public Kind typeOfTouch = Kind.Nada;
+		public Type type = Type.Nada;
 		public float amount = 0;
-		public bool isActive = false;
 	}
 
 }
