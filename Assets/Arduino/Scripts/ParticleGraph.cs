@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using ArduinoSerialReader;
 
 [RequireComponent (typeof(ParticleSystem))]
 public class ParticleGraph : MonoBehaviour

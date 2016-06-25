@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using ArduinoSerialReader;
 
 
 public class DotGraph : MonoBehaviour
