@@ -94,7 +94,7 @@ namespace ArduinoSerialReader
 
 		void OnDisable ()
 		{
-			if (sp.IsOpen)
+			if (sp != null && sp.IsOpen)
 				sp.Close ();
 		}
 
@@ -130,14 +130,15 @@ namespace ArduinoSerialReader
 
 		void OnApplicationQuit ()
 		{
-			EndThreads ();  
+			if (m_thread != null && m_thread.IsAlive)
+				EndThreads ();  
 		}
 
 		void EndThreads ()
 		{
 			runThread = false;
 			//you could use thread.abort() but that has issues on iOS
-
+			Debug.Log ("Ending Thread");
 			while (m_thread.IsAlive) {
 				//simply have main loop wait till thread ends
 			}
