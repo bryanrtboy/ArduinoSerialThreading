@@ -28,14 +28,14 @@ namespace ArduinoSerialReader
 
 		void OnEnable ()
 		{
-			TouchDetector.instance.OnTouch += HandleTouches;
-			TouchDetector.instance.OnNewTouchDetected += HandleNewTouchDetected;
+			TouchDetector.instance.OnTouchAllTouches += HandleTouches;
+			TouchDetector.instance.TouchOn += HandleNewTouchDetected;
 		}
 
 		void OnDisable ()
 		{
-			TouchDetector.instance.OnTouch -= HandleTouches;
-			TouchDetector.instance.OnNewTouchDetected -= HandleNewTouchDetected;
+			TouchDetector.instance.OnTouchAllTouches -= HandleTouches;
+			TouchDetector.instance.TouchOn -= HandleNewTouchDetected;
 		}
 
 		void HandleTouches (ToucheTouch[] touches)
