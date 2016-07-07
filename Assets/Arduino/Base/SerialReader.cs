@@ -26,6 +26,7 @@ namespace ArduinoSerialReader
 		public ByteReciever m_receiver;
 		public float m_updateRate = .01f;
 		public int m_bufferSize = 512;
+		public Text m_debugMessages;
 
 		Thread m_thread;
 		bool runThread = true;
@@ -65,22 +66,40 @@ namespace ArduinoSerialReader
 		void Start ()
 		{
 			#if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-			Debug.Log ("Found " + GetPortNames ().Length + " serial ports");
+
+			string str = "Found " + GetPortNames ().Length + " serial ports";
+			Debug.Log (str);
+
+			if (m_debugMessages)
+				m_debugMessages.text = str;
+
 			foreach (string s in GetPortNames()) {
 				Debug.Log (s);
+				if (m_debugMessages)
+					m_debugMessages.text += "\n" + s;
 			}
 			#else
-			Debug.Log ("Found " + SerialPort.GetPortNames ().Length + " serial ports");
+
+			string str = "Found " + SerialPort.GetPortNames ().Length + " serial ports";
+			Debug.Log (str);
+
+			if (m_debugMessages)
+				m_debugMessages.text = str;
+
 			foreach (string s in SerialPort.GetPortNames()) {
 				Debug.Log (s);
 			}
 			#endif
 
 
-			if (SerialPortNameExists ())
+			if (SerialPortNameExists ()) {
 				OpenSerialPort ();
-			else
-				Debug.LogError ("No Serial port of that name");
+			} else {
+				Debug.LogError ("No Serial port named " + m_name);
+
+				if (m_debugMessages)
+					m_debugMessages.text = "No Serial port named " + m_name;
+			}
 		}
 
 		public void ChangeSerialPortName (int value)
@@ -93,9 +112,16 @@ namespace ArduinoSerialReader
 					OpenSerialPort ();
 				} else {
 					if (sp.IsOpen) {
-						Debug.Log ("serial port already exists and is open!");
+						Debug.Log ("Serial port already exists and is open!");
+						if (m_debugMessages)
+							m_debugMessages.text = "Serial port already exists and is open!";
 					} else {
-						Debug.Log ("serial port already exists, but it's not open...");
+						Debug.Log ("Serial port already exists, but it's not open! Trying to open it now...");
+
+						if (m_debugMessages)
+							m_debugMessages.text = "Serial port already exists, but it's not open! Trying to open it now...";
+
+						OpenSerialPort ();
 					}
 				}
 			}
@@ -190,9 +216,10 @@ namespace ArduinoSerialReader
          
 			// Are we on Unix?
 			if (p == 4 || p == 128 || p == 6) {
-				string[] ttys = Directory.GetFiles ("/dev/", "tty.*");
+				string[] ttys = Directory.GetFiles ("/dev/", "*");
+
 				foreach (string dev in ttys) {
-					if (dev.StartsWith ("/dev/tty"))
+					if (dev.StartsWith ("/dev/tty.") || dev.StartsWith ("/dev/cu."))
 						serial_ports.Add (dev);
 					Debug.Log (String.Format (dev));
 				}
