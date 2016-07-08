@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 namespace ArduinoSerialReader
 {
@@ -10,20 +13,16 @@ namespace ArduinoSerialReader
 
 		public event Action<ToucheTouch.Type> TouchOn;
 		public event Action<ToucheTouch.Type> TouchOff;
-		public event Action<ToucheTouch[]> OnTouchAllTouches;
 
 		public ByteReciever m_receiver;
 		//These should be attached to Buttons Objects that are named - None, Touch, Grab, InWater. Buttons should send their position when pressed to SetButtonMaxPosition
 
-		Vector2[] m_storedGesturePoints = new Vector2[4];
-		float[] m_gestureDistances = new float [4];
-		Vector2 m_lastMaxYposition = Vector2.zero;
-		ToucheTouch m_touche;
-		int m_toucheCount;
 		[HideInInspector]
 		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.Nada;
-		//This is set to a different type to force an evaluation to fire an initial TouchOn event
+		//This is set to a different type to force an evaluation to fire an initial TouchOn/off events
 		ToucheTouch.Type m_lastTouchType = ToucheTouch.Type.Touch;
+		Dictionary<int,ToucheTouch> m_toucheCurves;
+		Vector2[] m_currentCurve;
 
 
 		void Awake ()
@@ -36,103 +35,166 @@ namespace ArduinoSerialReader
 			else if (instance != this)
 				//Then destroy this. This enforces our singleton pattern, meaning there can only ever be one instance of a TouchDetector.
 				Destroy (gameObject); 
-
-			m_toucheCount = System.Enum.GetValues (typeof(ToucheTouch.Type)).Length;
-			m_storedGesturePoints = new Vector2[m_toucheCount];
-			m_gestureDistances = new float [m_toucheCount];
 		}
 
 		void OnEnable ()
 		{
-			GetMaxPositions ();
-			m_receiver.OnByteReceived += GestureCompare;
+			LoadData ();
+			m_receiver.OnByteReceived += SetCurrentPositions;
+
 		}
 
 		void OnDisable ()
 		{
-			m_receiver.OnByteReceived -= GestureCompare;
+			SaveData ();
+			m_receiver.OnByteReceived -= SetCurrentPositions;
 		}
 
-		public void GetMaxPositions ()
+		public void SetToucheCurveTo (int type)
 		{
-			for (int i = 0; i < m_toucheCount; i++) {
-				ToucheTouch.Type k = (ToucheTouch.Type)i;
-				if (PlayerPrefs.HasKey (k.ToString () + "x") && PlayerPrefs.HasKey (k.ToString () + "y")) {
-					float x = PlayerPrefs.GetFloat (k.ToString () + "x");	
-					float y = PlayerPrefs.GetFloat (k.ToString () + "y");
-					m_storedGesturePoints [i] = new Vector2 (x, y);
-				}
+			if (m_toucheCurves == null)
+				m_toucheCurves = new Dictionary<int, ToucheTouch> ();
+			
+			ToucheTouch touche = new ToucheTouch ((ToucheTouch.Type)type, 0, Vector2ToCurvePositions (m_currentCurve), 0);
+
+			if (m_toucheCurves.ContainsKey (type)) {
+				m_toucheCurves [type] = touche;
+			} else {
+				m_toucheCurves.Add (type, touche);
 			}
 		}
 
-		public void SetMaxPosition (int buttonIndex)
+		void SetCurrentPositions (Vector2[] positions)
 		{
-
-			ToucheTouch.Type k = (ToucheTouch.Type)buttonIndex;
-			m_storedGesturePoints [buttonIndex] = m_lastMaxYposition;
-			PlayerPrefs.SetFloat (k.ToString () + "x", m_lastMaxYposition.x);
-			PlayerPrefs.SetFloat (k.ToString () + "y", m_lastMaxYposition.y);
+			m_currentCurve = positions;
+			CompareCurrentCurveToSavedCurves ();
 		}
 
-		void GestureCompare (Vector2[] positions, int maxYposition)
+		void CompareCurrentCurveToSavedCurves ()
 		{
-			m_lastMaxYposition = positions [maxYposition];
 
-			float totalDist = 0;
-			int currentMax = 0;
-			float currentMaxValue = -1;
-			float currentAmmount = 0;
+			if (m_toucheCurves == null || m_currentCurve == null)
+				return;
 
-			for (int i = 0; i < m_toucheCount; i++) {
-				//Store the maxY so that if a button is pressed, we will enter this value for that button.
-				m_lastMaxYposition = positions [maxYposition];
+			int storedToucheCurveCount = m_toucheCurves.Count;
+		
+			List<ToucheTouch> toucheList = new List<ToucheTouch> ();
 
-				//Calculate the distance for this button, and put it in an array of distances for all of the buttons
-				m_gestureDistances [i] = Vector2.Distance (m_lastMaxYposition, m_storedGesturePoints [i]);
-				totalDist += m_gestureDistances [i];
-				if (m_gestureDistances [i] < currentMaxValue || i == 0) {
-					currentMax = i;
-
-					currentMaxValue = m_gestureDistances [i];
+			foreach (int key in m_toucheCurves.Keys) {
+				int distance = 0;
+				Vector2[] storedVector2s = CurvePositionsToVector2 (m_toucheCurves [key].curve);
+				int steps = m_toucheCurves [key].curve.Length - 1; //We set this here in case we are missing a packet or two
+				if (steps > m_currentCurve.Length - 1)
+					steps = m_currentCurve.Length - 1;
+				
+				for (int j = 0; j < steps; j++) {
+					float temp = Vector2.Distance (storedVector2s [j], m_currentCurve [j]);
+					distance += (int)(temp * temp);//square to exxagerate differences
 				}
+
+				m_toucheCurves [key].distance = distance;
+				toucheList.Add (m_toucheCurves [key]);
 			}
+				
+			toucheList.Sort (); //sorted by distance
 
-			totalDist = totalDist / 3;
+			m_currentTouchType = toucheList [0].type; //lowest number wins...
 
-			ToucheTouch[] touches = new ToucheTouch[m_toucheCount];
-			for (int i = 0; i < m_toucheCount; i++) {
-				currentAmmount = 0;
-				currentAmmount = 1 - m_gestureDistances [i] / totalDist; //How much of the button is filled (strength of signal)
-
-				m_touche = new ToucheTouch ();
-				m_touche.type = (ToucheTouch.Type)i;
-				m_touche.amount = currentAmmount;
-
-				touches [i] = m_touche;
-
-				if (currentMax == i)
-					m_currentTouchType = m_touche.type;
-
-				if (m_lastTouchType != m_currentTouchType) { //Don't send events repeatedly if the touch type has not changed
-					if (m_touche.type != m_currentTouchType) { //Send Off to all that are not the current touchtype
-						if (TouchOff != null)
-							TouchOff (m_touche.type);
-					} else {
-					
+			if (m_lastTouchType != m_currentTouchType) {
+				
+				for (int i = 0; i < toucheList.Count; i++) {
+					if (i == 0) {
 						if (TouchOn != null)
 							TouchOn (m_currentTouchType);
-					} 
+					} else {
+						if (TouchOff != null)
+							TouchOff (toucheList [i].type);
+					}
 				}
 			}
+				
+			m_lastTouchType = m_currentTouchType;
+		}
 
-			if (OnTouchAllTouches != null)
-				OnTouchAllTouches (touches);  //Send a batch of touches so that we can visualize how strong the matching touch is compared to neighbors
-		
-			m_lastTouchType = m_currentTouchType; //All touches are analyzed, set last touch to this touch
+		#region Saving Persistent Data
+
+		public void SaveData ()
+		{
+			if (m_toucheCurves == null)
+				return;
+			
+			BinaryFormatter bf = new BinaryFormatter ();
+			FileStream file = File.Create (Application.persistentDataPath + "/savedCurves.dat");
+
+			CurveData data = new CurveData ();
+			data.toucheCurves = m_toucheCurves;
+
+			bf.Serialize (file, data);
+			file.Close ();
+		}
+
+		public void LoadData ()
+		{
+			if (File.Exists (Application.persistentDataPath + "/savedCurves.dat")) {
+				BinaryFormatter bf = new BinaryFormatter ();
+				FileStream file = File.Open (Application.persistentDataPath + "/savedCurves.dat", FileMode.Open);
+
+				CurveData data = (CurveData)bf.Deserialize (file);
+				file.Close ();
+
+				m_toucheCurves = data.toucheCurves;
+			}
+		}
+
+		#endregion
+
+		#region Utilities
+
+		Vector2[] CurvePositionsToVector2 (CurvePositions[] curvePositions)
+		{
+			int length = curvePositions.Length;
+			Vector2[] pos = new Vector2[length];
+			for (int i = 0; i < length; i++) {
+				pos [i] = new Vector2 (curvePositions [i].x, curvePositions [i].y);
+			}
+			return pos;
+		}
+
+		CurvePositions[] Vector2ToCurvePositions (Vector2[] positions)
+		{
+			int length = positions.Length;
+			CurvePositions[] pos = new CurvePositions[length];
+			for (int i = 0; i < length; i++) {
+				pos [i] = new CurvePositions (positions [i].x, positions [i].y);
+			}
+			return pos;
+		}
+
+		#endregion
+	}
+
+	#region Custom Classes
+	[Serializable]
+	public class CurveData
+	{
+		public Dictionary<int,ToucheTouch> toucheCurves;
+	}
+
+	[Serializable]
+	public class CurvePositions
+	{
+		public float x;
+		public float y;
+
+		public CurvePositions (float _x, float _y)
+		{
+			x = _x;
+			y = _y;
 		}
 	}
 
-	public class ToucheTouch
+	[Serializable]
+	public class ToucheTouch : IComparable<ToucheTouch>
 	{
 		public enum Type
 		{
@@ -145,6 +207,29 @@ namespace ArduinoSerialReader
 
 		public Type type = Type.Nada;
 		public float amount = 0;
-	}
+		public CurvePositions[] curve;
+		//Would prefer to use Vector2's, but they are not serializable...
+		public int distance = 0;
 
+		public ToucheTouch (Type _type, float _amount, CurvePositions[] _curve, int _distance)
+		{
+			type = _type;
+			amount = _amount;
+			curve = _curve;
+			distance = _distance;
+		}
+
+		public int CompareTo (ToucheTouch other) //Sort based on distance
+		{
+			if (this.distance < other.distance)
+				return -1;
+			else if (this.distance > other.distance)
+				return 1;
+			else
+				return 0;
+		}
+
+		#endregion
+
+	}
 }

@@ -88,6 +88,8 @@ namespace ArduinoSerialReader
 
 			foreach (string s in SerialPort.GetPortNames()) {
 				Debug.Log (s);
+				if (m_debugMessages)
+					m_debugMessages.text += "\n" + s;
 			}
 			#endif
 

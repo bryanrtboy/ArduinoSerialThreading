@@ -28,38 +28,24 @@ namespace ArduinoSerialReader
 
 		void OnEnable ()
 		{
-			TouchDetector.instance.OnTouchAllTouches += HandleTouches;
 			TouchDetector.instance.TouchOn += HandleNewTouchDetected;
+			TouchDetector.instance.TouchOff += HandleTouchOff;
 		}
 
 		void OnDisable ()
 		{
-			TouchDetector.instance.OnTouchAllTouches -= HandleTouches;
 			TouchDetector.instance.TouchOn -= HandleNewTouchDetected;
-		}
-
-		void HandleTouches (ToucheTouch[] touches)
-		{
-
-			int currentTouch = (int)TouchDetector.instance.m_currentTouchType;
-
-			for (int i = 0; i < touches.Length; i++) {
-				
-
-				if (i != currentTouch) {
-					m_buttonImages [i].color = Color.white;
-					float amt = 1 - touches [i].amount;
-					m_buttonImages [i].fillAmount = amt;
-				} else {
-					m_buttonImages [i].fillAmount = touches [i].amount;
-				}
-					
-			}
+			TouchDetector.instance.TouchOff -= HandleTouchOff;
 		}
 
 		void HandleNewTouchDetected (ToucheTouch.Type type)
 		{
 			m_buttonImages [(int)type].color = Color.red;
+		}
+
+		void HandleTouchOff (ToucheTouch.Type type)
+		{
+			m_buttonImages [(int)type].color = Color.grey;
 		}
 			
 	}

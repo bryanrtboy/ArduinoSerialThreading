@@ -37,7 +37,7 @@ public class DotGraph : MonoBehaviour
 		m_receiver.OnByteReceived -= UpdatePositions;
 	}
 
-	public void UpdatePositions (Vector2[] positions, int maxYposition)
+	public void UpdatePositions (Vector2[] positions)
 	{
 		int count = positions.Length;
 
@@ -47,10 +47,10 @@ public class DotGraph : MonoBehaviour
 				return;
 			}
 			m_nodes [i].transform.position = new Vector3 (m_nodes [i].transform.position.x, transform.position.y + (positions [i].y * m_yMultiplier), transform.position.z);
-			if (i == maxYposition)
-				m_nodes [i].localScale = new Vector3 (2, 2, 2);
-			else
-				m_nodes [i].localScale = new Vector3 (1, 1, 1);
+//			if (i == maxYposition)
+//				m_nodes [i].localScale = new Vector3 (2, 2, 2);
+//			else
+//				m_nodes [i].localScale = new Vector3 (1, 1, 1);
 		}
 	}
 

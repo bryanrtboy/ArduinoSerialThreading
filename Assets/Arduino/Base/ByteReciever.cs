@@ -27,7 +27,7 @@ namespace ArduinoSerialReader
 	public class ByteReciever : MonoBehaviour
 	{
 
-		public event Action<Vector2[],int> OnByteReceived;
+		public event Action<Vector2[]> OnByteReceived;
 
 		public SerialReader m_serialReader;
 
@@ -51,8 +51,6 @@ namespace ArduinoSerialReader
 		List<float> incomingYValues = new List<float> (0);
 		List<Vector2> incomingXYValues = new List<Vector2> (0);
 		Vector2[] xyPositions;
-		int maxYPosition = 0;
-
 
 		void Awake ()
 		{
@@ -70,7 +68,7 @@ namespace ArduinoSerialReader
 			if (DataRecieved) {
 				DataRecieved = false;
 				if (OnByteReceived != null && xyPositions != null)
-					OnByteReceived (xyPositions, maxYPosition);
+					OnByteReceived (xyPositions);
 			}
 		}
 
@@ -176,11 +174,6 @@ namespace ArduinoSerialReader
 				break;    
 			case 3:  // Array has finished being recieved, update arrays being drawn 
 				xyPositions = incomingXYValues.ToArray ();   //Send data when Command says
-				float maxY = 0;
-				for (int i = 0; i < xyPositions.Length; i++) {
-					if (xyPositions [i].y > maxY)
-						maxYPosition = i;
-				}
 				DataRecieved = true;
 				incomingXYValues.Clear ();
 				break;  
@@ -194,6 +187,5 @@ namespace ArduinoSerialReader
 	public class DataPacket
 	{
 		Vector2[] xy;
-		float maxY;
 	}
 }
