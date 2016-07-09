@@ -21,7 +21,8 @@ namespace ArduinoSerialReader
 
 		Dictionary<ToucheTouch.Type,Image> m_buttonImages;
 
-		void Awake ()
+
+		void Start ()
 		{
 			if (TouchDetector.instance == null) {
 				Debug.LogError ("No Touch Detector in Scene!");
@@ -34,12 +35,7 @@ namespace ArduinoSerialReader
 				Destroy (this);
 				return;
 			}
-		}
-
-		void Start ()
-		{
-			//TouchDetector t = FindObjectOfType<TouchDetector> () as TouchDetector;
-			//		int length = ToucheTouch.Type.GetValues (typeof(ToucheTouch.Type)).GetLength;
+	
 			m_buttonImages = new Dictionary<ToucheTouch.Type,Image> ();
 			foreach (ToucheTouch.Type value in System.Enum.GetValues(typeof(ToucheTouch.Type))) {
 				GameObject g = Instantiate (m_buttonPrefab, m_buttonHolder.transform.position, Quaternion.identity) as GameObject;
@@ -54,7 +50,7 @@ namespace ArduinoSerialReader
 				m_buttonImages.Add (value, img);
 
 				AddListener (b, (int)value);
-				//Debug.Log (value);
+				Debug.Log (value);
 			}
 
 		}
@@ -66,6 +62,9 @@ namespace ArduinoSerialReader
 
 		void OnEnable ()
 		{
+			if (TouchDetector.instance == null)
+				Debug.LogError ("No Touch Detector in Scene! Use the Script Execution order to insure UI is loaded after TouchDetector.");
+
 			TouchDetector.instance.TouchOn += HandleNewTouchDetected;
 			TouchDetector.instance.TouchOff += HandleTouchOff;
 		}

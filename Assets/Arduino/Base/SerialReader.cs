@@ -32,7 +32,7 @@ namespace ArduinoSerialReader
 		bool runThread = true;
 		bool updateThread;
 		string m_storedPortName = "SerialPortName";
-		List<string> m_comPortsFound = new List<string> (0);
+		List<string> m_comPortsFound = new List<string> ();
 
 		SerialPort sp;
 
@@ -68,7 +68,7 @@ namespace ArduinoSerialReader
 			#if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
 
 			string str = "Found " + GetPortNames ().Length + " serial ports";
-			Debug.Log (str);
+//			Debug.Log (str);
 
 			if (m_debugMessages)
 				m_debugMessages.text = str;

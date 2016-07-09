@@ -25,6 +25,8 @@ public class LineGraph : MonoBehaviour
 			m_curves = new List<GameObject> ();
 		}
 
+
+
 		int count = 0;
 		foreach (int key in data.toucheCurves.Keys) {
 
@@ -56,6 +58,9 @@ public class LineGraph : MonoBehaviour
 			txt.color = c;
 			txt.alignment = TextAlignment.Center;
 			txt.anchor = TextAnchor.LowerCenter;
+
+			if (data.toucheCurves [key].curve == null)
+				return;
 
 			int length = data.toucheCurves [key].curve.Length;
 			xIncrement = m_width / length;

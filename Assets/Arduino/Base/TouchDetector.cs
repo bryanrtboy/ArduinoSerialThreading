@@ -29,26 +29,31 @@ namespace ArduinoSerialReader
 		void Awake ()
 		{
 			//Check if instance already exists
-			if (instance == null)
+			if (instance == null) {
 				//if not, set instance to this
+				Debug.Log ("Instance is null at " + Time.time);
 				instance = this;
-			//If instance already exists and it's not this:
-			else if (instance != this)
+				//If instance already exists and it's not this:
+			} else if (instance != this) {
+				Debug.Log ("Instance does not equal this at " + Time.time);
 				//Then destroy this. This enforces our singleton pattern, meaning there can only ever be one instance of a TouchDetector.
 				Destroy (gameObject); 
+			}
 		}
 
 		void OnEnable ()
 		{
-			LoadData ();
+			
 			m_receiver.OnByteReceived += SetCurrentPositions;
+			LoadData ();
 
 		}
 
 		void OnDisable ()
 		{
-			SaveData ();
+			
 			m_receiver.OnByteReceived -= SetCurrentPositions;
+			SaveData ();
 		}
 
 		public void SetToucheCurveTo (int type)
