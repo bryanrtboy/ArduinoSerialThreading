@@ -15,7 +15,6 @@ namespace ArduinoSerialReader
 		public event Action<ToucheTouch.Type> TouchOff;
 
 		public ByteReciever m_receiver;
-		//These should be attached to Buttons Objects that are named - None, Touch, Grab, InWater. Buttons should send their position when pressed to SetButtonMaxPosition
 
 		[HideInInspector]
 		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.Nada;
@@ -143,6 +142,8 @@ namespace ArduinoSerialReader
 				file.Close ();
 
 				m_toucheCurves = data.toucheCurves;
+
+				Debug.Log ("Touche curve count is " + m_toucheCurves.Count);
 			}
 		}
 
@@ -152,6 +153,9 @@ namespace ArduinoSerialReader
 
 		Vector2[] CurvePositionsToVector2 (CurvePositions[] curvePositions)
 		{
+			if (curvePositions == null)
+				return null;
+
 			int length = curvePositions.Length;
 			Vector2[] pos = new Vector2[length];
 			for (int i = 0; i < length; i++) {
@@ -162,6 +166,9 @@ namespace ArduinoSerialReader
 
 		CurvePositions[] Vector2ToCurvePositions (Vector2[] positions)
 		{
+			if (positions == null)
+				return null;
+
 			int length = positions.Length;
 			CurvePositions[] pos = new CurvePositions[length];
 			for (int i = 0; i < length; i++) {

@@ -221,9 +221,10 @@ namespace ArduinoSerialReader
 				string[] ttys = Directory.GetFiles ("/dev/", "*");
 
 				foreach (string dev in ttys) {
-					if (dev.StartsWith ("/dev/tty.") || dev.StartsWith ("/dev/cu."))
-						serial_ports.Add (dev);
-					Debug.Log (String.Format (dev));
+					if (dev.StartsWith ("/dev/tty.") || dev.StartsWith ("/dev/cu.")) {
+						serial_ports.Add (dev);	
+						Debug.Log (String.Format (dev));
+					}
 				}
 			}
 			return serial_ports.ToArray ();
