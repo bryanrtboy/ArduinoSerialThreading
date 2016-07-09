@@ -81,13 +81,13 @@ namespace ArduinoSerialReader
 			#else
 
 			string str = "Found " + SerialPort.GetPortNames ().Length + " serial ports";
-			Debug.Log (str);
+//			Debug.Log (str);
 
 			if (m_debugMessages)
 				m_debugMessages.text = str;
 
 			foreach (string s in SerialPort.GetPortNames()) {
-				Debug.Log (s);
+//				Debug.Log (s);
 				if (m_debugMessages)
 					m_debugMessages.text += "\n" + s;
 			}
@@ -143,7 +143,7 @@ namespace ArduinoSerialReader
 			foreach (string s in SerialPort.GetPortNames()) {
 				if (s == m_name)
 					noMatches = false;  //At least one name matches
-				Debug.Log (s);
+				//Debug.Log (s);
 			}
 			#endif
 
@@ -205,7 +205,7 @@ namespace ArduinoSerialReader
 		{
 			runThread = false;
 			//you could use thread.abort() but that has issues on iOS
-			Debug.Log ("Ending Thread");
+			//		Debug.Log ("Ending Thread");
 			while (m_thread.IsAlive) {
 				//simply have main loop wait till thread ends
 			}
@@ -223,7 +223,7 @@ namespace ArduinoSerialReader
 				foreach (string dev in ttys) {
 					if (dev.StartsWith ("/dev/tty.") || dev.StartsWith ("/dev/cu.")) {
 						serial_ports.Add (dev);	
-						Debug.Log (String.Format (dev));
+						//	Debug.Log (String.Format (dev));
 					}
 				}
 			}

@@ -18,12 +18,14 @@ public class DotGraph : MonoBehaviour
 
 	void Awake ()
 	{
+
 		m_nodes = new Transform[m_nodeCount];
 		xIncrement = m_width / m_nodeCount;
 		for (int i = 0; i < m_nodeCount; i++) {
 			m_nodes [i] = Instantiate (m_node, transform.position, Quaternion.identity) as Transform;
 			m_nodes [i].position = new Vector3 (transform.position.x + (i * xIncrement), transform.position.y, transform.position.z);
 			m_nodes [i].name = "Node " + i.ToString ();
+			m_nodes [i].parent = this.transform;
 		}
 	}
 

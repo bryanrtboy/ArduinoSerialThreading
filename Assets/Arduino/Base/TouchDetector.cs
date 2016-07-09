@@ -15,13 +15,15 @@ namespace ArduinoSerialReader
 		public event Action<ToucheTouch.Type> TouchOff;
 
 		public ByteReciever m_receiver;
+		public LineGraph m_lineGraph;
 
 		[HideInInspector]
-		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.Nada;
+		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.None;
 		//This is set to a different type to force an evaluation to fire an initial TouchOn/off events
-		ToucheTouch.Type m_lastTouchType = ToucheTouch.Type.Touch;
+		ToucheTouch.Type m_lastTouchType = ToucheTouch.Type.Pinch;
 		Dictionary<int,ToucheTouch> m_toucheCurves;
 		Vector2[] m_currentCurve;
+		CurveData data;
 
 
 		void Awake ()
@@ -61,6 +63,10 @@ namespace ArduinoSerialReader
 			} else {
 				m_toucheCurves.Add (type, touche);
 			}
+
+			SaveData ();
+			if (m_lineGraph)
+				m_lineGraph.CreateFixedCurves (data);
 		}
 
 		void SetCurrentPositions (Vector2[] positions)
@@ -115,6 +121,8 @@ namespace ArduinoSerialReader
 			m_lastTouchType = m_currentTouchType;
 		}
 
+
+
 		#region Saving Persistent Data
 
 		public void SaveData ()
@@ -124,10 +132,7 @@ namespace ArduinoSerialReader
 			
 			BinaryFormatter bf = new BinaryFormatter ();
 			FileStream file = File.Create (Application.persistentDataPath + "/savedCurves.dat");
-
-			CurveData data = new CurveData ();
-			data.toucheCurves = m_toucheCurves;
-
+			data = new CurveData (m_toucheCurves);
 			bf.Serialize (file, data);
 			file.Close ();
 		}
@@ -138,12 +143,13 @@ namespace ArduinoSerialReader
 				BinaryFormatter bf = new BinaryFormatter ();
 				FileStream file = File.Open (Application.persistentDataPath + "/savedCurves.dat", FileMode.Open);
 
-				CurveData data = (CurveData)bf.Deserialize (file);
+				data = (CurveData)bf.Deserialize (file);
 				file.Close ();
 
 				m_toucheCurves = data.toucheCurves;
 
-				Debug.Log ("Touche curve count is " + m_toucheCurves.Count);
+				if (m_lineGraph)
+					m_lineGraph.CreateFixedCurves (data);
 			}
 		}
 
@@ -185,6 +191,11 @@ namespace ArduinoSerialReader
 	public class CurveData
 	{
 		public Dictionary<int,ToucheTouch> toucheCurves;
+
+		public CurveData (Dictionary<int,ToucheTouch> _toucheCurves)
+		{
+			toucheCurves = _toucheCurves;
+		}
 	}
 
 	[Serializable]
@@ -206,17 +217,17 @@ namespace ArduinoSerialReader
 		public enum Type
 		{
 			//Using 'None' as a name has issues...
-			Nada = 0,
-			Touch = 1,
+			None = 0,
+			Pinch = 1,
 			Grab = 2,
-			InWater = 3
+			In_Water = 3
 		}
 
-		public Type type = Type.Nada;
-		public float amount = 0;
+		public Type type;
+		public float amount;
 		public CurvePositions[] curve;
 		//Would prefer to use Vector2's, but they are not serializable...
-		public int distance = 0;
+		public int distance;
 
 		public ToucheTouch (Type _type, float _amount, CurvePositions[] _curve, int _distance)
 		{

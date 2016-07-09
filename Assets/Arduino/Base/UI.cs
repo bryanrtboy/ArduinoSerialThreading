@@ -6,16 +6,20 @@
 /// */
 /// </summary>
 using UnityEngine;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 namespace ArduinoSerialReader
 {
 	public class UI : MonoBehaviour
 	{
+		
+		public HorizontalLayoutGroup m_buttonHolder;
+		public GameObject m_buttonPrefab;
 
-		public Image[] m_buttonImages = new Image[4];
-		//With 4 types of touches, we need to have 4 images and they should be sorted in order that matches the ToucheTouchType
+		Dictionary<ToucheTouch.Type,Image> m_buttonImages;
 
 		void Awake ()
 		{
@@ -24,6 +28,40 @@ namespace ArduinoSerialReader
 				Destroy (this);
 				return;
 			}
+
+			if (m_buttonHolder == null) {
+				Debug.LogError ("No Place to put the buttons! Please add a UI Panel with a Horizontal Layout Group to the scene");
+				Destroy (this);
+				return;
+			}
+		}
+
+		void Start ()
+		{
+			//TouchDetector t = FindObjectOfType<TouchDetector> () as TouchDetector;
+			//		int length = ToucheTouch.Type.GetValues (typeof(ToucheTouch.Type)).GetLength;
+			m_buttonImages = new Dictionary<ToucheTouch.Type,Image> ();
+			foreach (ToucheTouch.Type value in System.Enum.GetValues(typeof(ToucheTouch.Type))) {
+				GameObject g = Instantiate (m_buttonPrefab, m_buttonHolder.transform.position, Quaternion.identity) as GameObject;
+				g.name = value.ToString ();
+				g.transform.parent = m_buttonHolder.transform;
+				g.transform.localScale = Vector3.one;
+				Button b = g.GetComponent<Button> () as Button;
+
+				Text label = g.GetComponentInChildren<Text> () as Text;
+				label.text = g.name;
+				Image img = g.GetComponent<Image> () as Image;
+				m_buttonImages.Add (value, img);
+
+				AddListener (b, (int)value);
+				//Debug.Log (value);
+			}
+
+		}
+
+		void AddListener (Button b, int value)
+		{
+			b.onClick.AddListener (() => TouchDetector.instance.SetToucheCurveTo (value));
 		}
 
 		void OnEnable ()
@@ -40,12 +78,12 @@ namespace ArduinoSerialReader
 
 		void HandleNewTouchDetected (ToucheTouch.Type type)
 		{
-			m_buttonImages [(int)type].color = Color.red;
+			m_buttonImages [type].color = Color.red;
 		}
 
 		void HandleTouchOff (ToucheTouch.Type type)
 		{
-			m_buttonImages [(int)type].color = Color.grey;
+			m_buttonImages [type].color = Color.grey;
 		}
 			
 	}
