@@ -10,15 +10,16 @@ public class DotGraph : MonoBehaviour
 	public Transform m_node;
 	public float m_width = 8f;
 	public float m_yMultiplier = 0.1f;
-	public int m_nodeCount = 160;
+	int m_nodeCount = 0;
 	//Should match the Arduino Touche frequency count
 
 	Transform[] m_nodes;
 	float xIncrement = 0;
+	bool nodesAreMade = false;
 
-	void Awake ()
+	void MakeNodes ()
 	{
-
+//		Debug.Log ("Making " + m_nodeCount + " dots.");
 		m_nodes = new Transform[m_nodeCount];
 		xIncrement = m_width / m_nodeCount;
 		for (int i = 0; i < m_nodeCount; i++) {
@@ -27,6 +28,7 @@ public class DotGraph : MonoBehaviour
 			m_nodes [i].name = "Node " + i.ToString ();
 			m_nodes [i].parent = this.transform;
 		}
+	
 	}
 
 	void OnEnable ()
@@ -41,18 +43,22 @@ public class DotGraph : MonoBehaviour
 
 	public void UpdatePositions (Vector2[] positions)
 	{
-		int count = positions.Length;
+		if (!nodesAreMade) {
+			m_nodeCount = TouchDetector.instance.m_steps;
 
-		for (int i = 0; i < count; i++) {
-			if (i > m_nodeCount) {
+			if (m_nodeCount != 0) {
+				nodesAreMade = true;
+				MakeNodes ();
+			}
+			return; //only continue if nodes are made
+		}
+
+		for (int i = 0; i < positions.Length; i++) {
+			if (i >= m_nodeCount) {
 				Debug.Log ("Stopping, not enough nodes for the positions...");
 				return;
 			}
 			m_nodes [i].transform.position = new Vector3 (m_nodes [i].transform.position.x, transform.position.y + (positions [i].y * m_yMultiplier), transform.position.z);
-//			if (i == maxYposition)
-//				m_nodes [i].localScale = new Vector3 (2, 2, 2);
-//			else
-//				m_nodes [i].localScale = new Vector3 (1, 1, 1);
 		}
 	}
 

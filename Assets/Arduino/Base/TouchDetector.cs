@@ -16,6 +16,7 @@ namespace ArduinoSerialReader
 
 		public ByteReciever m_receiver;
 		public LineGraph m_lineGraph;
+		public int m_steps = 160;
 
 		[HideInInspector]
 		public ToucheTouch.Type m_currentTouchType = ToucheTouch.Type.None;
@@ -25,13 +26,15 @@ namespace ArduinoSerialReader
 		Vector2[] m_currentCurve;
 		CurveData data;
 
+		//Number of points in our curve on the X axis
+
 
 		void Awake ()
 		{
 			//Check if instance already exists
 			if (instance == null) {
 				//if not, set instance to this
-				Debug.Log ("Instance is null at " + Time.time);
+//				Debug.Log ("Instance is null at " + Time.time);
 				instance = this;
 				//If instance already exists and it's not this:
 			} else if (instance != this) {
@@ -61,7 +64,7 @@ namespace ArduinoSerialReader
 			if (m_toucheCurves == null)
 				m_toucheCurves = new Dictionary<int, ToucheTouch> ();
 			
-			ToucheTouch touche = new ToucheTouch ((ToucheTouch.Type)type, 0, Vector2ToCurvePositions (m_currentCurve), 0);
+			ToucheTouch touche = new ToucheTouch ((ToucheTouch.Type)type, Vector2ToCurvePositions (m_currentCurve), 0);
 
 			if (m_toucheCurves.ContainsKey (type)) {
 				m_toucheCurves [type] = touche;
@@ -89,17 +92,23 @@ namespace ArduinoSerialReader
 			int storedToucheCurveCount = m_toucheCurves.Count;
 		
 			List<ToucheTouch> toucheList = new List<ToucheTouch> ();
-
 			foreach (int key in m_toucheCurves.Keys) {
 				int distance = 0;
 				Vector2[] storedVector2s = CurvePositionsToVector2 (m_toucheCurves [key].curve);
-				int steps = m_toucheCurves [key].curve.Length - 1; //We set this here in case we are missing a packet or two
-				if (steps > m_currentCurve.Length - 1)
-					steps = m_currentCurve.Length - 1;
+
+				int vCount = storedVector2s.Length;
+				int currCount = m_currentCurve.Length;
+				if (currCount < vCount)
+					vCount = currCount;
+
+				if (vCount == 0)
+					return; //Stop if we have no vectors...
 				
-				for (int j = 0; j < steps; j++) {
-					float temp = Vector2.Distance (storedVector2s [j], m_currentCurve [j]);
-					distance += (int)(temp * temp);//square to exxagerate differences
+				for (int j = 0; j < m_steps; j++) {
+					if (j < vCount) {
+						float temp = Vector2.Distance (storedVector2s [j], m_currentCurve [j]);
+						distance += (int)(temp * temp);//square to exxagerate differences
+					}
 				}
 
 				m_toucheCurves [key].distance = distance;
@@ -229,15 +238,13 @@ namespace ArduinoSerialReader
 		}
 
 		public Type type;
-		public float amount;
 		public CurvePositions[] curve;
 		//Would prefer to use Vector2's, but they are not serializable...
 		public int distance;
 
-		public ToucheTouch (Type _type, float _amount, CurvePositions[] _curve, int _distance)
+		public ToucheTouch (Type _type, CurvePositions[] _curve, int _distance)
 		{
 			type = _type;
-			amount = _amount;
 			curve = _curve;
 			distance = _distance;
 		}

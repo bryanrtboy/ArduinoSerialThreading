@@ -6,8 +6,9 @@ using ArduinoSerialReader;
 public class ParticleGraph : MonoBehaviour
 {
 	public ByteReciever m_receiver;
-	public float m_yMultiplier = .1f;
-	public float m_width = 10;
+	public float m_width = 15f;
+	public float m_yMultiplier = .01f;
+
 
 	ParticleSystem m_particleSystem;
 	ParticleSystem.Particle[] m_particles;
@@ -39,11 +40,6 @@ public class ParticleGraph : MonoBehaviour
 		for (int i = 0; i < totalPositions; i++) {
 			ParticleSystem.EmitParams emitOveride = new ParticleSystem.EmitParams ();
 			emitOveride.position = new Vector3 (transform.position.x + (i * x_increment), transform.position.y + (positions [i].y * m_yMultiplier), transform.position.z);
-//			if (i == maxYPosition)
-//				emitOveride.startColor = Color.white;
-//			else
-//				emitOveride.startColor = Color.grey;
-			//emitOveride.applyShapeToPosition = false;
 			m_particleSystem.Emit (emitOveride, 1); //Emit one particle at the position
 		}
 	}

@@ -8,8 +8,8 @@ public class LineGraph : MonoBehaviour
 
 	public Material m_lineMaterial;
 	public Font	m_font;
-	public float m_width = 8f;
-	public float m_yMultiplier = 0.1f;
+	public float m_width = 15f;
+	public float m_yMultiplier = 0.01f;
 	public Color[] m_lineColors = new Color[]{ Color.cyan, Color.red, Color.yellow, Color.green };
 
 	float xIncrement = 0;

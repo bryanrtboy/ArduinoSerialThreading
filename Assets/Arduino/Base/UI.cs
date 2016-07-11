@@ -50,7 +50,7 @@ namespace ArduinoSerialReader
 				m_buttonImages.Add (value, img);
 
 				AddListener (b, (int)value);
-				Debug.Log (value);
+//				Debug.Log (value);
 			}
 
 		}
