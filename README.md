@@ -7,3 +7,5 @@ The lines are stored for comparing to the current curve reading to stored curves
 ![gif](https://github.com/bryanrtboy/ArduinoSerialThreading/blob/master/orchid.gif)
 
 Also includes a method for getting the name of the current serial port in the player build, allowing users to interactively switch to the correct port. All settings are stored for future launches of the application.
+
+The original Processing sketch for Touche seemed glitchy, and appeared to only compare the highest y value of each curve, rather than the curve as a whole. This improves upon that by comparing the entire stored curve to the current curve read from the Arduino, always defaulting to the lowest total cumulative distance between each point of the curves. 
